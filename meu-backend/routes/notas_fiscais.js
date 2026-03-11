@@ -4,17 +4,35 @@ const router  = express.Router();
 
 router.get('/notas', async (req, res) => {
     try {
-        const [rows] = await pool.query(`
-            SELECT nf_id, nf_numero, nf_data_emissao, nf_fornecedor FROM notas_fiscais
-        `);
-        res.json(rows);
-    } catch (err) { res.status(500).json({ erro: err.message }); }
+        const { busca } = req.query;
+
+        let sql = `
+            SELECT n.nf_id, n.nf_numero, n.nf_data_emissao, n.id_fornecedor, f.forn_nome 
+            FROM notas_fiscais n
+            INNER JOIN fornecedores f ON n.id_fornecedor = f.forn_id
+        `;
+        let valores = [];
+
+        if (busca) {
+            sql += ` WHERE nf_numero LIKE ?`;
+            
+            const termoBusca = `%${busca}%`;
+            valores.push(termoBusca);
+        }
+
+        const [resultado] = await pool.query(sql, valores);
+        
+        res.json(resultado);
+        
+    } catch (err) { 
+        res.status(500).json({ erro: err.message }); 
+    }
 });
 
 router.get('/notas/:id', async (req, res) => {
     try {
         const [notaRows] = await pool.query(`
-            SELECT nf_id AS id, nf_numero, nf_data_emissao, nf_fornecedor FROM notas_fiscais
+            SELECT nf_id AS id, nf_numero, nf_data_emissao, id_fornecedor FROM notas_fiscais
             WHERE nf_id = ?`, [req.params.id]
         );
 
@@ -40,7 +58,7 @@ router.get('/notas/:id', async (req, res) => {
 });
 
 router.post('/notas', async (req, res) => {
-    const { nf_numero, nf_fornecedor, nf_data_emissao, produtosMovimentados } = req.body;
+    const { nf_numero, id_fornecedor, nf_data_emissao, produtosMovimentados } = req.body;
 
     const conn = await pool.getConnection();
     
@@ -48,8 +66,8 @@ router.post('/notas', async (req, res) => {
         await conn.beginTransaction();
         
         const [result] = await conn.query(
-            'INSERT INTO notas_fiscais (nf_numero, nf_fornecedor, nf_data_emissao) VALUES (?,?,?)',
-            [nf_numero, nf_fornecedor, nf_data_emissao]
+            'INSERT INTO notas_fiscais (nf_numero, id_fornecedor, nf_data_emissao) VALUES (?,?,?)',
+            [nf_numero, id_fornecedor, nf_data_emissao]
         );
         const novoId = result.insertId;
         
@@ -72,15 +90,15 @@ router.post('/notas', async (req, res) => {
 });
 
 router.put('/notas/:id', async (req, res) => {
-    const { nf_numero, nf_fornecedor, nf_data_emissao, produtosMovimentados } = req.body;
+    const { nf_numero, id_fornecedor, nf_data_emissao, produtosMovimentados } = req.body;
     const conn = await pool.getConnection();
     
     try {
         await conn.beginTransaction();
         
         await conn.query(
-            'UPDATE notas_fiscais SET nf_numero=?, nf_fornecedor=?, nf_data_emissao=? WHERE nf_id=?',
-            [nf_numero, nf_fornecedor, nf_data_emissao, req.params.id]
+            'UPDATE notas_fiscais SET nf_numero=?, id_fornecedor=?, nf_data_emissao=? WHERE nf_id=?',
+            [nf_numero, id_fornecedor, nf_data_emissao, req.params.id]
         );
         
         await conn.query(

@@ -10,15 +10,15 @@ router.post('/registro', async (req, res) => {
     if (!nome || !cnpj || !endereco || !senha) {
         return res.status(400).json({ erro: 'Nome, CNPJ, endereço e senha são obrigatórios' });
     }
-        
+
     try {
         const hash = await bcrypt.hash(senha, 10);
-        
+
         const [result] = await pool.query(
             'INSERT INTO empresa (em_nome, em_cnpj, em_endereco, em_senha) VALUES (?, ?, ?, ?)',
             [nome, cnpj, endereco, hash]
         );
-        
+
         res.status(201).json({ mensagem: 'Empresa cadastrada com sucesso!', id: result.insertId });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
@@ -30,7 +30,7 @@ router.post('/registro', async (req, res) => {
 
 router.post('/login', async (req, res) => {
     const { cnpj, senha } = req.body;
-    
+
     try {
         const [rows] = await pool.query(
             'SELECT * FROM empresa WHERE em_cnpj = ?', [cnpj]
