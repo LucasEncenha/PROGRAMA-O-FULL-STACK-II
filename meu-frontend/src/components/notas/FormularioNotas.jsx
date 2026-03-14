@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import BuscaSelecionavel from './BuscaSelecionavel';
-import ListaPratos from './ListaProdutos';
+import ListarNotas from './ListarNotas';
 
 
 export default function FormularioNotaFiscal() {
@@ -58,7 +58,7 @@ export default function FormularioNotaFiscal() {
 
     return (
         <div style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', fontFamily: 'sans-serif' }}>
-            <h2>Cadastrar Nota Fiscal de Entrada</h2>
+            <h2>Cadastrar Nota Fiscal</h2>
             
             <label style={{ display: 'block', marginBottom: '12px' }}>
                 <strong>Número da NF:</strong>
@@ -98,10 +98,10 @@ export default function FormularioNotaFiscal() {
                     width: '100%', padding: '10px', background: '#2196f3',
                     color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer'
                 }}>
-                Salvar Capa da Nota
+                Cadastrar Nota Fiscal
             </button>
 
-            <ListaPratos />
+            <ListarNotas />
         </div>
     );
 }
