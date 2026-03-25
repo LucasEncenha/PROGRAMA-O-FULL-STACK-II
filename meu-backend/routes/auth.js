@@ -4,58 +4,52 @@ const pool    = require('../db');
 const bcrypt  = require('bcrypt');
 const jwt     = require('jsonwebtoken');
 
-router.post('/registro', async (req, res) => {
-    const { nome, cnpj, endereco, senha } = req.body;
-    
-    if (!nome || !cnpj || !endereco || !senha) {
-        return res.status(400).json({ erro: 'Nome, CNPJ, endereço e senha são obrigatórios' });
-    }
+router.post('/login', async (req, res) => {
+    const { email, senha } = req.body;
+
+    if (!email || !senha)
+        return res.status(400).json({ erro: 'Email e senha são obrigatórios' });
 
     try {
-        const hash = await bcrypt.hash(senha, 10);
-
-        const [result] = await pool.query(
-            'INSERT INTO empresa (em_nome, em_cnpj, em_endereco, em_senha) VALUES (?, ?, ?, ?)',
-            [nome, cnpj, endereco, hash]
+        const [rows] = await pool.query(
+            'SELECT * FROM usuarios WHERE usu_email = ?', [email]
         );
 
-        res.status(201).json({ mensagem: 'Empresa cadastrada com sucesso!', id: result.insertId });
+        if (rows.length === 0)
+            return res.status(401).json({ erro: 'Credenciais inválidas' });
+
+        const ok = await bcrypt.compare(senha, rows[0].usu_senha);
+
+        if (!ok)
+            return res.status(401).json({ erro: 'Credenciais inválidas' });
+
+        const token = jwt.sign(
+            { id: rows[0].usu_id, nome: rows[0].usu_nome, cargo: rows[0].id_cargo },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+        );
+
+        res.json({ token, usuario: { id: rows[0].usu_id, nome: rows[0].usu_nome, cargo: rows[0].id_cargo } });
     } catch (err) {
-        if (err.code === 'ER_DUP_ENTRY') {
-            return res.status(409).json({ erro: 'Este CNPJ já está cadastrado' });
-        }
         res.status(500).json({ erro: err.message });
     }
 });
 
-router.post('/login', async (req, res) => {
-    const { cnpj, senha } = req.body;
+router.get('/perfil', (req, res) => {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) return res.status(401).json({ erro: 'Token não fornecido' });
 
+    const token = authHeader.split(' ')[1];
     try {
-        const [rows] = await pool.query(
-            'SELECT * FROM empresa WHERE em_cnpj = ?', [cnpj]
-        );
-
-        if (rows.length === 0) {
-            return res.status(401).json({ erro: 'Credenciais inválidas' });
-        }
-
-        const ok = await bcrypt.compare(senha, rows[0].em_senha);
-        
-        if (!ok) {
-            return res.status(401).json({ erro: 'Credenciais inválidas' });
-        }
-
-        const token = jwt.sign(
-            { id: rows[0].em_id, nome: rows[0].em_nome },
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
-        );
-        
-        res.json({ token });
-    } catch (err) {
-        res.status(500).json({ erro: err.message });
+        const payload = jwt.verify(token, process.env.JWT_SECRET);
+        res.json({ usuario: payload });
+    } catch {
+        res.status(401).json({ erro: 'Token inválido ou expirado' });
     }
+});
+
+router.post('/logout', (req, res) => {
+    res.json({ mensagem: 'Logout realizado' });
 });
 
 module.exports = router;

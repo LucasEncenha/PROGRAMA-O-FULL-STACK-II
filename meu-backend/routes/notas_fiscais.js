@@ -48,10 +48,10 @@ router.get('/notas/:id', async (req, res) => {
 
         const nf = notaRows[0];
         res.json({
-            id: nf.prod_id,  
-            numero: nf.prod_codigo_barras,  
+            id: nf.nf_id,
+            numero: nf.nf_numero,
             dataEmissao: nf.nf_data_emissao,
-            fornecedor: nf.nf_fornecedor,
+            fornecedor: nf.id_fornecedor,
             produtosMovimentados: produtos
         });
     } catch (err) { res.status(500).json({ erro: err.message }); }
@@ -73,8 +73,8 @@ router.post('/notas', async (req, res) => {
         
         for (const item of produtosMovimentados) {
             await conn.query(
-                'INSERT INTO movimentacoes (id_nota_fiscal, id_produto, quantidade, tipo_movimento) VALUES (?,?,?,?)',
-                [novoId, item.id_produto, item.quantidade, item.tipo_movimento || 'ENTRADA']
+                'INSERT INTO movimentacoes (mov_tipo, mov_quantidade, id_produto, id_nota_fiscal) VALUES (?,?,?,?)',
+                [item.tipo_movimento || 'ENTRADA', item.quantidade, item.id_produto, novoId]
             );
         }
         
@@ -107,8 +107,8 @@ router.put('/notas/:id', async (req, res) => {
         
         for (const item of produtosMovimentados) {
             await conn.query(
-                'INSERT INTO movimentacoes (id_nota_fiscal, id_produto, quantidade, tipo_movimento) VALUES (?,?,?,?)',
-                [req.params.id, item.id_produto, item.quantidade, item.tipo_movimento || 'ENTRADA']
+                'INSERT INTO movimentacoes (mov_tipo, mov_quantidade, id_produto, id_nota_fiscal) VALUES (?,?,?,?)',
+                [item.tipo_movimento || 'ENTRADA', item.quantidade, item.id_produto, req.params.id]
             );
         }
         

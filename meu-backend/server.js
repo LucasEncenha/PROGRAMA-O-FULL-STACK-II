@@ -13,15 +13,20 @@ const notasRoutes   = require('./routes/notas_fiscais.js');
 const produtoRoutes   = require('./routes/produto.js');
 const fornecedorRoutes   = require('./routes/fornecedor.js');
 
+app.use(cors({
+    origin: 'http://127.0.0.1:5173',
+    credentials: true
+}));
 app.use('/auth', authRoutes);
-app.use(cors());
 
 const autenticar = require('./middlewares/auth.js');
 
-app.use('/api/empresa', autenticar, empresaRoutes);
 
-app.use('/api', notasRoutes);
-app.use('/api', fornecedorRoutes);
+app.use('/api/empresa', autenticar, empresaRoutes);
+app.use('/api', autenticar, setorRoutes);
+app.use('/api', autenticar, produtoRoutes);
+app.use('/api', autenticar, notasRoutes);
+app.use('/api', autenticar, fornecedorRoutes);
 
 app.get('/', (req, res) => {
   res.json({ status: 'API rodando!' });

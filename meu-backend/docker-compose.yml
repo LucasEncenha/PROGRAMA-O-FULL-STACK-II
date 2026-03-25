@@ -11,3 +11,20 @@ services:
       - "3307:3306"
     volumes:
       - ./mysql_data:/var/lib/mysql
+
+  app:
+    build: .
+    container_name: back-end-app-1
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: controle_estoque
+      DB_PORT: 3306
+      JWT_SECRET: sua_chave_secreta
+      JWT_EXPIRES_IN: 8h
+    depends_on:
+      - db
